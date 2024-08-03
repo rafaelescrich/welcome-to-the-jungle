@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:13
+    container_name: jungle-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: jungle
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - jungle-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jungle-app
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/jungle?sslmode=disable
+      DATA_LOADED: "false"
+      CSV_FILE_PATH: /data/dataset.csv
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dataset.csv:/data/dataset.csv
+    networks:
+      - jungle-network
+
+volumes:
+  postgres-data:
+
+networks:
+  jungle-network:
+    driver: bridge
