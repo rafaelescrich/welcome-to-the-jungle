@@ -12,12 +12,16 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
+	"github.com/joho/godotenv"
+	"github.com/patrickmn/go-cache"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-var DBClient db.DBClient
+var (
+	DBClient *db.DBClient
+	appCache *cache.Cache
+)
 
 // @title Welcome to the Jungle - Client API
 // @version 1.0
@@ -25,16 +29,23 @@ var DBClient db.DBClient
 // @host localhost:8080
 // @BasePath /
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal("Error loading configuration")
 	}
 
-	// Connect to the database
+	// Initialize cache with a default expiration time of 5 minutes, and purging every 10 minutes
+	appCache = cache.New(5*time.Minute, 10*time.Minute)
+
+	// Connect to the database with retries
 	DBClient, err = db.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Error connecting to the database")
+		log.Fatal("Error connecting to the database:", err)
 	}
 
 	// Initialize the database schema
@@ -48,7 +59,13 @@ func main() {
 		// Load CSV data into the database
 		err := DBClient.LoadCSV(cfg.CSVFilePath)
 		if err != nil {
-			log.Fatal("Error loading CSV data into the database")
+			log.Fatal("Error loading CSV data into the database:", err)
+		}
+
+		// Optimize the database
+		err = DBClient.OptimizeDatabase()
+		if err != nil {
+			log.Fatal("Error optimizing the database:", err)
 		}
 	}
 
@@ -93,6 +110,12 @@ func getClientInfo(c *gin.Context) {
 		return
 	}
 
+	// Check if the data is in cache
+	if cachedClient, found := appCache.Get(uidStr); found {
+		c.JSON(http.StatusOK, cachedClient)
+		return
+	}
+
 	client, err := DBClient.GetClientByUID(uid)
 	if err != nil {
 		log.Printf(err.Error())
@@ -100,14 +123,19 @@ func getClientInfo(c *gin.Context) {
 		return
 	}
 
+	// Cache the client data
+	appCache.Set(uidStr, client, cache.DefaultExpiration)
+
 	c.JSON(http.StatusOK, client)
 }
 
 // @Summary Get clients by age
 // @Description Get clients by age range
 // @Produce json
-// @Param start query string true "Start Date" format(date)
-// @Param end query string true "End Date" format(date)
+// @Param start query string true "Start Date" format(date) example(1970-01-01)
+// @Param end query string true "End Date" format(date) example(1980-01-01)
+// @Param limit query int false "Limit" default(100)
+// @Param offset query int false "Offset" default(0)
 // @Success 200 {array} models.Client
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -115,6 +143,9 @@ func getClientInfo(c *gin.Context) {
 func getClientsByAge(c *gin.Context) {
 	startStr := c.Query("start")
 	endStr := c.Query("end")
+	limitStr := c.DefaultQuery("limit", "100")
+	offsetStr := c.DefaultQuery("offset", "0")
+
 	if startStr == "" || endStr == "" {
 		c.JSON(http.StatusBadRequest, map[string]string{"error": "Start and end dates are required"})
 		return
@@ -131,9 +162,18 @@ func getClientsByAge(c *gin.Context) {
 		return
 	}
 
-	clients, err := DBClient.GetClientByAge(start, end)
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 100 // default limit
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0 // default offset
+	}
+
+	clients, err := DBClient.GetClientByAgeWithPagination(start, end, limit, offset)
 	if err != nil {
-		log.Printf(err.Error())
 		c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
 		return
 	}
@@ -155,12 +195,22 @@ func searchClientsByName(c *gin.Context) {
 		return
 	}
 
+	cacheKey := "name-" + name
+	// Check if the data is in cache
+	if cachedClients, found := appCache.Get(cacheKey); found {
+		c.JSON(http.StatusOK, cachedClients)
+		return
+	}
+
 	clients, err := DBClient.SearchClientByName(name)
 	if err != nil {
 		log.Printf(err.Error())
 		c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
 		return
 	}
+
+	// Cache the clients data
+	appCache.Set(cacheKey, clients, cache.DefaultExpiration)
 
 	c.JSON(http.StatusOK, clients)
 }

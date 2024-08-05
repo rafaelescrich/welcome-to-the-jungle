@@ -6,15 +6,20 @@ require (
 	github.com/anacrolix/log v0.15.2
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 )
 
 require (
 	github.com/anacrolix/generics v0.0.0-20230113004304-d6428d516633 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 )
 
 require (

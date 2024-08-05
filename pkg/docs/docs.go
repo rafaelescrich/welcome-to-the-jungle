@@ -70,6 +70,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "format": "date",
+                        "example": "1970-01-01",
                         "description": "Start Date",
                         "name": "start",
                         "in": "query",
@@ -78,10 +79,25 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "format": "date",
+                        "example": "1980-01-01",
                         "description": "End Date",
                         "name": "end",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
                     }
                 ],
                 "responses": {

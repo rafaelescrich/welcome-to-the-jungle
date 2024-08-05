@@ -8,10 +8,17 @@ services:
       POSTGRES_DB: jungle
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf  # Mount the custom configuration
     ports:
       - "5432:5432"
     networks:
       - jungle-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
 
   app:
     build:
@@ -19,7 +26,8 @@ services:
       dockerfile: Dockerfile
     container_name: jungle-app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/jungle?sslmode=disable
       DATA_LOADED: "false"

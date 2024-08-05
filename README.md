@@ -36,7 +36,8 @@ cd welcome-to-the-jungle
 docker-compose up --build
 ```
  
-2. **Access the API** :Open your browser and navigate to `http://localhost:8080/swagger/index.html` to see the Swagger UI for your API.
+2. **Access the API** :
+Open your browser and navigate to `http://localhost:8080/swagger/index.html` to see the Swagger UI for your API.
 
 ## API Endpoints 
  

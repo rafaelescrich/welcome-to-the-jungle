@@ -55,17 +55,29 @@ paths:
       description: Get clients by age range
       parameters:
       - description: Start Date
+        example: "1970-01-01"
         format: date
         in: query
         name: start
         required: true
         type: string
       - description: End Date
+        example: "1980-01-01"
         format: date
         in: query
         name: end
         required: true
         type: string
+      - default: 100
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
