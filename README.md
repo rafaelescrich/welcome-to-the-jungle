@@ -29,11 +29,13 @@ cd welcome-to-the-jungle
 ```
 
 ### Running the Application 
- 
+
+If the data is already loaded in the database just change the DATA_LOADED env to true. 
+
 1. **Build and run the Docker containers** :
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
  
 2. **Access the API** :
@@ -43,7 +45,7 @@ Open your browser and navigate to `http://localhost:8080/swagger/index.html` to 
  
 - `GET /info?uid={uid}`: Get client info by UID
  
-- `GET /info/by-age?start={start}&end={end}`: Get clients by age range
+- `GET /info/by-age?start={start}&end={end}&limit=100&offset=0`: Get clients by age range
  
 - `GET /search?name={name}`: Search clients by name
 
